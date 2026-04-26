@@ -1,0 +1,275 @@
+import { useState, useEffect } from 'react'
+import { Plus, Wallet, Trash2, History, ChevronRight, TrendingUp } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import './App.css'
+
+interface Transaction {
+  id: number;
+  amount: number;
+  description: string;
+  created_at: string;
+}
+
+interface Goal {
+  id: number;
+  title: string;
+  image_url: string;
+  target_amount: number;
+  current_amount: number;
+  currency: string;
+  transactions?: Transaction[];
+}
+
+const API_URL = 'http://localhost:3001/api';
+
+function App() {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(null);
+  const [depositAmount, setDepositAmount] = useState('');
+  
+  const [newGoal, setNewGoal] = useState({
+    title: '',
+    image_url: '',
+    target_amount: '',
+  });
+
+  const fetchGoals = async () => {
+    try {
+      const response = await fetch(`${API_URL}/goals`);
+      const goalsData: Goal[] = await response.json();
+      
+      // Fetch transactions for each goal
+      const goalsWithTransactions = await Promise.all(goalsData.map(async (goal) => {
+        const tResponse = await fetch(`${API_URL}/goals/${goal.id}/transactions`);
+        const tData = await tResponse.json();
+        return { ...goal, transactions: tData };
+      }));
+      
+      setGoals(goalsWithTransactions);
+    } catch (error) {
+      console.error('Failed to fetch goals:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchGoals();
+  }, []);
+
+  const handleCreateGoal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await fetch(`${API_URL}/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newGoal,
+          target_amount: parseFloat(newGoal.target_amount)
+        }),
+      });
+      setIsModalOpen(false);
+      setNewGoal({ title: '', image_url: '', target_amount: '' });
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to create goal:', error);
+    }
+  };
+
+  const handleDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGoalId) return;
+    try {
+      await fetch(`${API_URL}/goals/${selectedGoalId}/deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: parseFloat(depositAmount) }),
+      });
+      setIsDepositModalOpen(false);
+      setDepositAmount('');
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to deposit:', error);
+    }
+  };
+
+  const handleDeleteGoal = async (id: number) => {
+    if (!confirm('Видалити цю ціль?')) return;
+    try {
+      await fetch(`${API_URL}/goals/${id}`, { method: 'DELETE' });
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+    }
+  };
+
+  return (
+    <div className="App">
+      <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&display=swap" rel="stylesheet" />
+      
+      <header className="header">
+        <h1 className="logo">GOAL</h1>
+        <button className="create-btn" onClick={() => setIsModalOpen(true)}>
+          <Plus size={20} /> НОВА ЦІЛЬ
+        </button>
+      </header>
+
+      <main>
+        <div className="goal-grid">
+          <AnimatePresence>
+            {goals.map((goal) => {
+              const progress = Math.min((goal.current_amount / goal.target_amount) * 100, 100);
+              return (
+                <motion.div 
+                  key={goal.id} 
+                  className="goal-card-premium"
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <div className="goal-visual">
+                    <img 
+                      src={goal.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1000'} 
+                      alt={goal.title} 
+                      className="goal-img-large" 
+                    />
+                    <div className="goal-overlay-info">
+                      <h3 className="goal-title" style={{ fontSize: '2rem', margin: 0 }}>{goal.title}</h3>
+                    </div>
+                  </div>
+
+                  <div className="goal-main-content">
+                    <div className="stats-row">
+                      <div className="stat-item">
+                        <label>Цільова сума</label>
+                        <div className="stat-value">{goal.target_amount.toLocaleString()} {goal.currency}</div>
+                      </div>
+                      <div className="stat-item">
+                        <label>Накопичено</label>
+                        <div className="stat-value" style={{ color: '#8b5cf6' }}>{goal.current_amount.toLocaleString()} {goal.currency}</div>
+                      </div>
+                    </div>
+
+                    <div className="progress-section">
+                      <div className="huge-percent">{progress.toFixed(0)}%</div>
+                      <div className="custom-progress-bar">
+                        <motion.div 
+                          className="progress-fill-neon"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 1.5, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="action-btns">
+                      <button className="btn-premium btn-primary-glow" onClick={() => {
+                        setSelectedGoalId(goal.id);
+                        setIsDepositModalOpen(true);
+                      }}>
+                        <Wallet size={20} /> ПОПОВНИТИ
+                      </button>
+                      <button className="btn-premium" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} onClick={() => handleDeleteGoal(goal.id)}>
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+
+                    {goal.transactions && goal.transactions.length > 0 && (
+                      <div className="history-section">
+                        <div className="history-title">
+                          <History size={16} /> ІСТОРІЯ ТРАНЗАКЦІЙ
+                        </div>
+                        <div className="transaction-list">
+                          {goal.transactions.map((t) => (
+                            <div key={t.id} className="transaction-item">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <TrendingUp size={14} color="#10b981" />
+                                <span className="t-amount">+{t.amount.toLocaleString()} {goal.currency}</span>
+                              </div>
+                              <span className="t-date">{new Date(t.created_at).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {/* Modals remain with similar structure but updated styles */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <h2 style={{ marginBottom: '2rem', letterSpacing: '1px' }}>СТВОРИТИ НОВИЙ ПРОЕКТ</h2>
+            <form onSubmit={handleCreateGoal}>
+              <div className="form-group">
+                <label>НАЗВА</label>
+                <input 
+                  type="text" 
+                  placeholder="Введіть назву..." 
+                  required 
+                  value={newGoal.title}
+                  onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>НЕОБХІДНА СУМА</label>
+                <input 
+                  type="number" 
+                  placeholder="0.00" 
+                  required 
+                  value={newGoal.target_amount}
+                  onChange={(e) => setNewGoal({...newGoal, target_amount: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>URL ФОТО (UNSPLASH АБО ПРЯМЕ ПОСИЛАННЯ)</label>
+                <input 
+                  type="text" 
+                  placeholder="https://images.unsplash.com/..." 
+                  value={newGoal.image_url}
+                  onChange={(e) => setNewGoal({...newGoal, image_url: e.target.value})}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>СКАСУВАТИ</button>
+                <button type="submit" className="btn-primary" style={{ background: 'var(--primary)' }}>ЗАПУСТИТИ</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {isDepositModalOpen && (
+        <div className="modal-overlay">
+          <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <h2>ПОПОВНИТИ БАЛАНС</h2>
+            <form onSubmit={handleDeposit}>
+              <div className="form-group">
+                <label>СУМА ВНЕСКУ</label>
+                <input 
+                  type="number" 
+                  placeholder="0.00" 
+                  required 
+                  autoFocus
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsDepositModalOpen(false)}>СКАСУВАТИ</button>
+                <button type="submit" className="btn-primary" style={{ background: 'var(--primary)' }}>ПІДТВЕРДИТИ</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App
