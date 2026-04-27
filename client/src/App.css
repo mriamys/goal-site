@@ -5,6 +5,7 @@
   --bg-dark: #020617;
   --card-dark: #0f172a;
   --neon-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  --danger: #ef4444;
 }
 
 body {
@@ -40,6 +41,13 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4rem;
+  gap: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .create-btn {
@@ -54,12 +62,31 @@ body {
   gap: 0.5rem;
   transition: all 0.3s;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .create-btn:hover {
   background: var(--primary);
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
   transform: translateY(-2px);
+}
+
+.download-btn {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .goal-grid {
@@ -77,18 +104,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   position: relative;
-  height: 650px; /* ФІКСОВАНА ВИСОТА КАРТКИ */
-}
-
-@media (max-width: 950px) {
-  .goal-card-premium {
-    grid-template-columns: 1fr;
-    height: auto; /* На мобілках хай тягнеться */
-    max-height: none;
-  }
-  .goal-visual {
-    height: 300px;
-  }
+  height: 650px;
 }
 
 .goal-visual {
@@ -115,13 +131,21 @@ body {
   z-index: 5;
 }
 
+.goal-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .goal-main-content {
   padding: 3rem;
   display: flex;
   flex-direction: column;
   height: 100%;
   box-sizing: border-box;
-  overflow: hidden; /* Щоб контент не вилазив за межі картки */
+  overflow: hidden;
 }
 
 .progress-section {
@@ -188,8 +212,8 @@ body {
   padding-top: 2rem;
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Займає весь вільний простір */
-  min-height: 0; /* Важливо для flex-скролу */
+  flex-grow: 1;
+  min-height: 0;
 }
 
 .history-title {
@@ -209,7 +233,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  overflow-y: auto; /* ВНУТРІШНІЙ СКРОЛ */
+  overflow-y: auto;
   padding-right: 0.5rem;
 }
 
@@ -235,6 +259,13 @@ body {
   font-weight: 600;
 }
 
+.no-transactions {
+  color: #475569;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
 .btn-premium {
   padding: 1.25rem 2rem;
   border-radius: 1.25rem;
@@ -253,14 +284,27 @@ body {
   background: var(--primary);
   color: white;
   box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+  flex: 2;
+  justify-content: center;
 }
 
-.btn-primary-glow:hover {
+.btn-edit {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  padding: 1.25rem;
+}
+
+.btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 1.25rem;
+}
+
+.btn-premium:hover {
   transform: translateY(-3px);
-  box-shadow: 0 20px 30px -5px rgba(139, 92, 246, 0.5);
+  filter: brightness(1.2);
 }
 
-/* MODAL STYLES FIX */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -270,23 +314,25 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .modal {
   background: #0f172a;
-  padding: 3.5rem;
-  border-radius: 2.5rem;
+  padding: 2.5rem;
+  border-radius: 2rem;
   width: 100%;
-  max-width: 550px;
+  max-width: 500px;
   border: 1px solid rgba(139, 92, 246, 0.2);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal h2 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 900;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -295,16 +341,16 @@ body {
 }
 
 .form-group {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   color: #64748b;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -314,12 +360,13 @@ body {
   width: 100%;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 1.5rem;
-  border-radius: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1rem;
   transition: all 0.3s;
   box-sizing: border-box;
+  font-family: inherit;
 }
 
 .form-group input:focus {
@@ -329,51 +376,135 @@ body {
   outline: none;
 }
 
+/* Specific styling for date input icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
 .modal-actions {
   display: flex;
-  gap: 1.25rem;
-  margin-top: 3.5rem;
+  gap: 1rem;
+  margin-top: 2.5rem;
 }
 
 .btn-secondary {
   flex: 1;
-  padding: 1.25rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #64748b;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   font-weight: 800;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-}
-
 .btn-primary {
   flex: 2;
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   font-weight: 900;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
   transition: all 0.3s;
 }
 
-.btn-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 36px rgba(139, 92, 246, 0.5);
+/* MEDIA QUERIES FOR MOBILE */
+@media (max-width: 950px) {
+  #root {
+    padding: 1rem;
+  }
+
+  .header {
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    font-size: 1.8rem;
+  }
+
+  .goal-card-premium {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
+  }
+
+  .goal-visual {
+    height: 250px;
+  }
+
+  .goal-title {
+    font-size: 1.8rem;
+  }
+
+  .goal-main-content {
+    padding: 1.5rem;
+  }
+
+  .huge-percent {
+    font-size: 3.5rem;
+  }
+
+  .stats-row {
+    gap: 2rem;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .action-btns {
+    flex-wrap: wrap;
+  }
+
+  .btn-primary-glow {
+    width: 100%;
+    flex: none;
+    order: 1;
+  }
+
+  .btn-edit {
+    flex: 1;
+    order: 2;
+    justify-content: center;
+  }
+
+  .btn-delete {
+    flex: 1;
+    order: 3;
+    justify-content: center;
+  }
+
+  .transaction-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .stats-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; border: 2px solid var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #334155; }

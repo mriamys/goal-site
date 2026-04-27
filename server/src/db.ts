@@ -30,8 +30,17 @@ export async function initDb() {
       table.integer('goal_id').references('id').inTable('goals').onDelete('CASCADE');
       table.decimal('amount', 10, 2).notNullable();
       table.string('description');
+      table.string('date'); // Added date column
       table.timestamps(true, true);
     });
+  } else {
+    // Check if date column exists, if not add it
+    const hasDateColumn = await db.schema.hasColumn('transactions', 'date');
+    if (!hasDateColumn) {
+      await db.schema.table('transactions', (table) => {
+        table.string('date');
+      });
+    }
   }
 }
 
