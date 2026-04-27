@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Wallet, Trash2, History, TrendingUp, Edit } from 'lucide-react'
+import { Plus, Wallet, Trash2, History, TrendingUp, Edit, X, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 
@@ -28,11 +28,14 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
+  
   const [selectedGoalId, setSelectedGoalId] = useState<number | null>(null);
   const [depositAmount, setDepositAmount] = useState('');
   const [depositDate, setDepositDate] = useState(new Date().toISOString().split('T')[0]);
   
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
+  const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -46,7 +49,6 @@ function App() {
       const response = await fetch(`${API_URL}/goals`);
       const goalsData: Goal[] = await response.json();
       
-      // Fetch transactions for each goal
       const goalsWithTransactions = await Promise.all(goalsData.map(async (goal) => {
         const tResponse = await fetch(`${API_URL}/goals/${goal.id}/transactions`);
         const tData = await tResponse.json();
@@ -121,12 +123,43 @@ function App() {
   };
 
   const handleDeleteGoal = async (id: number) => {
-    if (!confirm('Видалити цю ціль?')) return;
+    if (!confirm('Видалити цю ціль та всі її транзакції?')) return;
     try {
       await fetch(`${API_URL}/goals/${id}`, { method: 'DELETE' });
       fetchGoals();
     } catch (error) {
       console.error('Failed to delete goal:', error);
+    }
+  };
+
+  const handleUpdateTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTransaction) return;
+    try {
+      await fetch(`${API_URL}/transactions/${editTransaction.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: editTransaction.amount,
+          date: editTransaction.date || editTransaction.created_at.split('T')[0],
+          description: editTransaction.description
+        }),
+      });
+      setIsEditTransactionModalOpen(false);
+      setEditTransaction(null);
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to update transaction:', error);
+    }
+  };
+
+  const handleDeleteTransaction = async (id: number) => {
+    if (!confirm('Видалити цю транзакцию? Сума цілі буде перерахована.')) return;
+    try {
+      await fetch(`${API_URL}/transactions/${id}`, { method: 'DELETE' });
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
     }
   };
 
@@ -138,7 +171,7 @@ function App() {
         <h1 className="logo">GOAL</h1>
         <div className="header-actions">
           <button className="download-btn" onClick={() => window.open(`${API_URL}/download-db`)}>
-            СКАЧАТИ БД
+            <Download size={20} style={{ marginRight: '8px' }} /> СКАЧАТИ БД
           </button>
           <button className="create-btn" onClick={() => setIsModalOpen(true)}>
             <Plus size={20} /> НОВА ЦІЛЬ
@@ -220,11 +253,24 @@ function App() {
                         <div className="transaction-list">
                           {goal.transactions.map((t) => (
                             <div key={t.id} className="transaction-item">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div className="t-info" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <TrendingUp size={14} color="#10b981" />
                                 <span className="t-amount">+{t.amount.toLocaleString()} {goal.currency}</span>
+                                <span className="t-date-label" style={{ color: '#475569', fontSize: '0.8rem', marginLeft: '8px' }}>
+                                  {t.date ? new Date(t.date).toLocaleDateString() : new Date(t.created_at).toLocaleDateString()}
+                                </span>
                               </div>
-                              <span className="t-date">{t.date ? new Date(t.date).toLocaleDateString() : new Date(t.created_at).toLocaleDateString()}</span>
+                              <div className="t-actions" style={{ display: 'flex', gap: '8px' }}>
+                                <button className="t-btn-icon" onClick={() => {
+                                  setEditTransaction(t);
+                                  setIsEditTransactionModalOpen(true);
+                                }} title="Редагувати">
+                                  <Edit size={14} />
+                                </button>
+                                <button className="t-btn-icon" style={{ color: '#ef4444' }} onClick={() => handleDeleteTransaction(t.id)} title="Видалити">
+                                  <X size={14} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -378,6 +424,39 @@ function App() {
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsDepositModalOpen(false)}>СКАСУВАТИ</button>
                 <button type="submit" className="btn-primary">ПІДТВЕРДИТИ</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {isEditTransactionModalOpen && editTransaction && (
+        <div className="modal-overlay">
+          <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <h2>РЕДАГУВАТИ ТРАНЗАКЦІЮ</h2>
+            <form onSubmit={handleUpdateTransaction}>
+              <div className="form-group">
+                <label>СУМА</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={editTransaction.amount}
+                  onChange={(e) => setEditTransaction({...editTransaction, amount: parseFloat(e.target.value)})}
+                />
+              </div>
+              <div className="form-group">
+                <label>ДАТА</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={editTransaction.date || editTransaction.created_at?.split('T')[0]}
+                  onChange={(e) => setEditTransaction({...editTransaction, date: e.target.value})}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsEditTransactionModalOpen(false)}>СКАСУВАТИ</button>
+                <button type="submit" className="btn-primary">ЗБЕРЕГТИ</button>
               </div>
             </form>
           </motion.div>

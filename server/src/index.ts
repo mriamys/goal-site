@@ -112,6 +112,62 @@ app.get('/api/goals/:id/transactions', async (req, res) => {
   }
 });
 
+// Update a transaction
+app.put('/api/transactions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { amount, date, description } = req.body;
+  
+  try {
+    await db.transaction(async (trx) => {
+      const oldTransaction = await trx('transactions').where({ id }).first();
+      if (!oldTransaction) throw new Error('Transaction not found');
+
+      // Update transaction
+      await trx('transactions').where({ id }).update({
+        amount,
+        date,
+        description,
+      });
+
+      // Adjust goal current_amount
+      const diff = amount - oldTransaction.amount;
+      if (diff !== 0) {
+        await trx('goals')
+          .where({ id: oldTransaction.goal_id })
+          .increment('current_amount', diff);
+      }
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update transaction' });
+  }
+});
+
+// Delete a transaction
+app.delete('/api/transactions/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    await db.transaction(async (trx) => {
+      const transaction = await trx('transactions').where({ id }).first();
+      if (!transaction) throw new Error('Transaction not found');
+
+      // Update goal amount
+      await trx('goals')
+        .where({ id: transaction.goal_id })
+        .decrement('current_amount', transaction.amount);
+
+      // Delete transaction
+      await trx('transactions').where({ id }).delete();
+    });
+    
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete transaction' });
+  }
+});
+
 // Download database
 app.get('/api/download-db', (req, res) => {
   const dbPath = path.join(__dirname, '../data.sqlite');
