@@ -1,211 +1,513 @@
-import { useState, useEffect } from 'react'
-import { Plus, Wallet, Trash2, History, TrendingUp } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import './App.css'
-
-interface Transaction {
-  id: number;
-  amount: number;
-  description: string;
-  created_at: string;
+:root {
+  --primary: #8b5cf6;
+  --primary-bright: #a78bfa;
+  --accent: #06b6d4;
+  --bg-dark: #020617;
+  --card-dark: #0f172a;
+  --neon-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  --danger: #ef4444;
 }
 
-interface Goal {
-  id: number;
-  title: string;
-  image_url: string;
-  target_amount: number;
-  current_amount: number;
-  currency: string;
-  transactions?: Transaction[];
+body {
+  background: var(--bg-dark);
+  color: #f8fafc;
+  font-family: 'Exo 2', sans-serif;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(6, 185, 212, 0.05) 0%, transparent 40%);
+  margin: 0;
+  min-height: 100vh;
 }
 
-const API_URL = '/api';
+#root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
 
-function App() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
-  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(null);
-  const [depositAmount, setDepositAmount] = useState('');
+.logo {
+  font-size: 2.5rem;
+  letter-spacing: -1px;
+  font-weight: 900;
+  background: linear-gradient(to right, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+  margin: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4rem;
+  gap: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.create-btn {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #fff;
+  border-radius: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.create-btn:hover {
+  background: var(--primary);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.download-btn {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.goal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.goal-card-premium {
+  display: grid;
+  grid-template-columns: 450px 1fr;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 2rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  position: relative;
+  height: 650px;
+}
+
+.goal-visual {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.goal-img-large {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6) contrast(1.1);
+}
+
+.goal-overlay-info {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 2.5rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 1) 10%, transparent 100%);
+  z-index: 5;
+}
+
+.goal-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.goal-main-content {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.progress-section {
+  margin: 1.5rem 0;
+  flex-shrink: 0;
+}
+
+.huge-percent {
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(to bottom, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.custom-progress-bar {
+  height: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 7px;
+  margin: 1.5rem 0;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-fill-neon {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+}
+
+.stats-row {
+  display: flex;
+  gap: 4rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.stat-item label {
+  display: block;
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.75rem;
+  font-weight: 800;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.action-btns {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  flex-shrink: 0;
+}
+
+.history-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.history-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #475569;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  flex-shrink: 0;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  flex-shrink: 0;
+}
+
+.t-amount {
+  color: #10b981;
+  font-weight: 800;
+}
+
+.t-date {
+  color: #475569;
+  font-weight: 600;
+}
+
+.no-transactions {
+  color: #475569;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.btn-premium {
+  padding: 1.25rem 2rem;
+  border-radius: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary-glow {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+  flex: 2;
+  justify-content: center;
+}
+
+.btn-edit {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  padding: 1.25rem;
+}
+
+.btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  padding: 1.25rem;
+}
+
+.btn-premium:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.2);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(2, 6, 23, 0.95);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.modal {
+  background: #0f172a;
+  padding: 2.5rem;
+  border-radius: 2rem;
+  width: 100%;
+  max-width: 500px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-left: 5px solid var(--primary);
+  padding-left: 1.25rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.form-group input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group input:focus {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+  outline: none;
+}
+
+/* Specific styling for date input icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #64748b;
+  border-radius: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  flex: 2;
+  padding: 1rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2);
+  transition: all 0.3s;
+}
+
+/* MEDIA QUERIES FOR MOBILE */
+@media (max-width: 950px) {
+  #root {
+    padding: 1rem;
+  }
+
+  .header {
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    font-size: 1.8rem;
+  }
+
+  .goal-card-premium {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
+  }
+
+  .goal-visual {
+    height: 250px;
+  }
+
+  .goal-title {
+    font-size: 1.8rem;
+  }
+
+  .goal-main-content {
+    padding: 1.5rem;
+  }
+
+  .huge-percent {
+    font-size: 3.5rem;
+  }
+
+  .stats-row {
+    gap: 2rem;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .action-btns {
+    flex-wrap: wrap;
+  }
+
+  .btn-primary-glow {
+    width: 100%;
+    flex: none;
+    order: 1;
+  }
+
+  .btn-edit {
+    flex: 1;
+    order: 2;
+    justify-content: center;
+  }
+
+  .btn-delete {
+    flex: 1;
+    order: 3;
+    justify-content: center;
+  }
+
+  .transaction-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   
-  const [newGoal, setNewGoal] = useState({
-    title: '',
-    image_url: '',
-    target_amount: '',
-  });
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
 
-  const fetchGoals = async () => {
-    try {
-      const response = await fetch(`${API_URL}/goals`);
-      const goalsData: Goal[] = await response.json();
-      
-      // Fetch transactions for each goal
-      const goalsWithTransactions = await Promise.all(goalsData.map(async (goal) => {
-        const tResponse = await fetch(`${API_URL}/goals/${goal.id}/transactions`);
-        const tData = await tResponse.json();
-        return { ...goal, transactions: tData };
-      }));
-      
-      setGoals(goalsWithTransactions);
-    } catch (error) {
-      console.error('Failed to fetch goals:', error);
-    }
-  };
+  .stats-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
 
-  useEffect(() => {
-    fetchGoals();
-  }, []);
-
-  const handleCreateGoal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await fetch(`${API_URL}/goals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newGoal,
-          target_amount: parseFloat(newGoal.target_amount)
-        }),
-      });
-      setIsModalOpen(false);
-      setNewGoal({ title: '', image_url: '', target_amount: '' });
-      fetchGoals();
-    } catch (error) {
-      console.error('Failed to create goal:', error);
-    }
-  };
-
-  const handleDeposit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedGoalId) return;
-    try {
-      await fetch(`${API_URL}/goals/${selectedGoalId}/deposit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: parseFloat(depositAmount) }),
-      });
-      setIsDepositModalOpen(false);
-      setDepositAmount('');
-      fetchGoals();
-    } catch (error) {
-      console.error('Failed to deposit:', error);
-    }
-  };
-
-  const handleDeleteGoal = async (id: number) => {
-    if (!confirm('Видалити цю ціль?')) return;
-    try {
-      await fetch(`${API_URL}/goals/${id}`, { method: 'DELETE' });
-      fetchGoals();
-    } catch (error) {
-      console.error('Failed to delete goal:', error);
-    }
-  };
-
-  return (
-    <div className="App">
-      <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&display=swap" rel="stylesheet" />
-      
-      <header className="header">
-        <h1 className="logo">GOAL</h1>
-        <button className="create-btn" onClick={() => setIsModalOpen(true)}>
-          <Plus size={20} /> НОВА ЦІЛЬ
-        </button>
-      </header>
-
-      <main>
-        <div className="goal-grid">
-          <AnimatePresence>
-            {goals.map((goal) => {
-              const progress = Math.min((goal.current_amount / goal.target_amount) * 100, 100);
-              return (
-                <motion.div 
-                  key={goal.id} 
-                  className="goal-card-premium"
-                  initial={{ opacity: 0, x: -50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                >
-                  <div className="goal-visual">
-                    <img 
-                      src={goal.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1000'} 
-                      alt={goal.title} 
-                      className="goal-img-large" 
-                    />
-                    <div className="goal-overlay-info">
-                      <h3 className="goal-title" style={{ fontSize: '2rem', margin: 0 }}>{goal.title}</h3>
-                    </div>
-                  </div>
-
-                  <div className="goal-main-content">
-                    <div className="stats-row">
-                      <div className="stat-item">
-                        <label>Цільова сума</label>
-                        <div className="stat-value">{goal.target_amount.toLocaleString()} {goal.currency}</div>
-                      </div>
-                      <div className="stat-item">
-                        <label>Накопичено</label>
-                        <div className="stat-value" style={{ color: '#8b5cf6' }}>{goal.current_amount.toLocaleString()} {goal.currency}</div>
-                      </div>
-                    </div>
-
-                    <div className="progress-section">
-                      <div className="huge-percent">{progress.toFixed(0)}%</div>
-                      <div className="custom-progress-bar">
-                        <motion.div 
-                          className="progress-fill-neon"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress}%` }}
-                          transition={{ duration: 1.5, ease: "easeOut" }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="action-btns">
-                      <button className="btn-premium btn-primary-glow" onClick={() => {
-                        setSelectedGoalId(goal.id);
-                        setIsDepositModalOpen(true);
-                      }}>
-                        <Wallet size={20} /> ПОПОВНИТИ
-                      </button>
-                      <button className="btn-premium" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} onClick={() => handleDeleteGoal(goal.id)}>
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-
-                    {goal.transactions && goal.transactions.length > 0 && (
-                      <div className="history-section">
-                        <div className="history-title">
-                          <History size={16} /> ІСТОРІЯ ТРАНЗАКЦІЙ
-                        </div>
-                        <div className="transaction-list">
-                          {goal.transactions.map((t) => (
-                            <div key={t.id} className="transaction-item">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <TrendingUp size={14} color="#10b981" />
-                                <span className="t-amount">+{t.amount.toLocaleString()} {goal.currency}</span>
-                              </div>
-                              <span className="t-date">{new Date(t.created_at).toLocaleDateString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-        </div>
-      </main>
-
-      {/* Modals remain with similar structure but updated styles */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-            <h2 style={{ marginBottom: '2rem', letterSpacing: '1px' }}>СТВОРИТИ НОВИЙ ПРОЕКТ</h2>
-            <form onSubmit={handleCreateGoal}>
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }<form onSubmit={handleCreateGoal}>
               <div className="form-group">
                 <label>НАЗВА</label>
                 <input 
@@ -227,23 +529,91 @@ function App() {
                 />
               </div>
               <div className="form-group">
-                <label>URL ФОТО (UNSPLASH АБО ПРЯМЕ ПОСИЛАННЯ)</label>
+                <label>ВАЛЮТА</label>
                 <input 
                   type="text" 
-                  placeholder="https://images.unsplash.com/..." 
+                  placeholder="UAH" 
+                  value={newGoal.currency}
+                  onChange={(e) => setNewGoal({...newGoal, currency: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>URL ФОТО</label>
+                <input 
+                  type="text" 
+                  placeholder="https://..." 
                   value={newGoal.image_url}
                   onChange={(e) => setNewGoal({...newGoal, image_url: e.target.value})}
                 />
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>СКАСУВАТИ</button>
-                <button type="submit" className="btn-primary" style={{ background: 'var(--primary)' }}>ЗАПУСТИТИ</button>
+                <button type="submit" className="btn-primary">ЗАПУСТИТИ</button>
               </div>
             </form>
           </motion.div>
         </div>
       )}
 
+      {/* Edit Modal */}
+      {isEditModalOpen && editGoal && (
+        <div className="modal-overlay">
+          <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <h2>РЕДАГУВАТИ ПРОЕКТ</h2>
+            <form onSubmit={handleUpdateGoal}>
+              <div className="form-group">
+                <label>НАЗВА</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editGoal.title}
+                  onChange={(e) => setEditGoal({...editGoal, title: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>НЕОБХІДНА СУМА</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={editGoal.target_amount}
+                  onChange={(e) => setEditGoal({...editGoal, target_amount: parseFloat(e.target.value)})}
+                />
+              </div>
+              <div className="form-group">
+                <label>НАКОПИЧЕНО (ВРУЧНУ)</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={editGoal.current_amount}
+                  onChange={(e) => setEditGoal({...editGoal, current_amount: parseFloat(e.target.value)})}
+                />
+              </div>
+              <div className="form-group">
+                <label>ВАЛЮТА</label>
+                <input 
+                  type="text" 
+                  value={editGoal.currency}
+                  onChange={(e) => setEditGoal({...editGoal, currency: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>URL ФОТО</label>
+                <input 
+                  type="text" 
+                  value={editGoal.image_url}
+                  onChange={(e) => setEditGoal({...editGoal, image_url: e.target.value})}
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setIsEditModalOpen(false)}>СКАСУВАТИ</button>
+                <button type="submit" className="btn-primary">ЗБЕРЕГТИ</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Deposit Modal */}
       {isDepositModalOpen && (
         <div className="modal-overlay">
           <motion.div className="modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
@@ -260,9 +630,18 @@ function App() {
                   onChange={(e) => setDepositAmount(e.target.value)}
                 />
               </div>
+              <div className="form-group">
+                <label>ДАТА ВНЕСКУ</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={depositDate}
+                  onChange={(e) => setDepositDate(e.target.value)}
+                />
+              </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={() => setIsDepositModalOpen(false)}>СКАСУВАТИ</button>
-                <button type="submit" className="btn-primary" style={{ background: 'var(--primary)' }}>ПІДТВЕРДИТИ</button>
+                <button type="submit" className="btn-primary">ПІДТВЕРДИТИ</button>
               </div>
             </form>
           </motion.div>
